@@ -7,7 +7,9 @@
  * Runs the Access Request chatbot. Each user message goes to the Now Assist
  * Skill Kit skill "Access Request Chat", which returns the next reply plus the
  * answers it understood. This class:
- *   - keeps the conversation state in the user's server-side session,
+ *   - keeps the conversation state, either in the user's session (portal
+ *     widget) or passed in and out as a string (Virtual Agent / Otto, which
+ *     stores it in a topic variable),
  *   - looks up users and checks Action values (AccessRequestCatalogUtils),
  *   - accepts only answers the server has verified,
  *   - submits the catalog item itself, and only after the user confirmed
@@ -45,6 +47,27 @@ AccessRequestChatEngine.prototype = {
         this._addHistory(state, 'Assistant', this.GREETING);
         this._save(state);
         return this._result(state, this.GREETING, false);
+    },
+
+    /**
+     * Virtual Agent / Otto versions of start() and handleMessage(). The state is
+     * passed in and returned as a JSON string so the topic can keep it in a
+     * topic variable (vaVars) between turns. Results also contain "state".
+     */
+    startWithState: function() {
+        this._externalState = '';
+        this._useExternalState = true;
+        var result = this.start();
+        result.state = this._externalState;
+        return result;
+    },
+
+    handleMessageWithState: function(stateJson, message) {
+        this._externalState = (stateJson || '') + '';
+        this._useExternalState = true;
+        var result = this.handleMessage(message);
+        result.state = this._externalState;
+        return result;
     },
 
     /** Handles one user message and returns { reply, done, request_number, link }. */
@@ -89,7 +112,6 @@ AccessRequestChatEngine.prototype = {
         if (out.stage == 'cancelled') {
             state.done = true;
             reply = reply || 'No problem, I have cancelled this request. Have a good day!';
-            reply += '\n\nType anything if you want to start a new request.';
 
         } else if ((out.stage == 'confirm' || out.stage == 'submit' || !reply) && complete) {
             // Always show the summary the server holds, not the model's version,
@@ -330,7 +352,7 @@ AccessRequestChatEngine.prototype = {
     },
 
     _load: function() {
-        var raw = gs.getSession().getProperty(this.SESSION_KEY);
+        var raw = this._useExternalState ? this._externalState : gs.getSession().getProperty(this.SESSION_KEY);
         if (!raw)
             return null;
         try {
@@ -341,11 +363,17 @@ AccessRequestChatEngine.prototype = {
     },
 
     _save: function(state) {
-        gs.getSession().putProperty(this.SESSION_KEY, JSON.stringify(state));
+        if (this._useExternalState)
+            this._externalState = JSON.stringify(state);
+        else
+            gs.getSession().putProperty(this.SESSION_KEY, JSON.stringify(state));
     },
 
     _clear: function() {
-        gs.getSession().clearProperty(this.SESSION_KEY);
+        if (this._useExternalState)
+            this._externalState = '';
+        else
+            gs.getSession().clearProperty(this.SESSION_KEY);
     },
 
     type: 'AccessRequestChatEngine'

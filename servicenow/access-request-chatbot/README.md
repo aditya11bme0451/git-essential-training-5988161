@@ -1,7 +1,7 @@
 # Access Request Chatbot: Now Assist Skill Kit
 
-A conversational chatbot built with the **Now Assist Skill Kit** only (no AI
-Agent Studio). It chats with the user, collects the three variables on your
+A conversational chatbot that runs **inside ServiceNow Otto chat**, with the AI
+provided by the **Now Assist Skill Kit** (no AI Agent Studio). It chats with the user, collects the three variables on your
 existing catalog item, shows a summary, and submits the request when the user
 confirms.
 
@@ -14,10 +14,10 @@ confirms.
 ## How it works
 
 ```
- Chat window (Service Portal widget)
-        │  user message
+ Otto chat ──► Virtual Agent topic "Submit access request" (found by its description)
+        │  user message (the topic loops once per message)
         ▼
- AccessRequestChatEngine (Script Include) ── keeps the conversation in the user's session
+ AccessRequestChatEngine (Script Include) ── conversation state kept in a topic variable
         │  conversation history + verified state + Add/Remove options + user matches
         ▼
  Now Assist Skill Kit skill "Access Request Chat"  (LLM, one call per turn)
@@ -42,7 +42,8 @@ after the user confirms, so the LLM can never submit something on its own.
 | `nask_skill/access_request_chat_skill.md` | **The Skill Kit skill:** inputs, the full prompt, test values, and how to publish it |
 | `script_include/AccessRequestChatEngine.js` | Runs each chat turn: calls the skill, checks the answers, decides when to submit |
 | `script_include/AccessRequestCatalogUtils.js` | User lookup, Action choices, and catalog submission via `CartJS` |
-| `widget/*` | The chat window: a Service Portal widget (HTML, CSS, client and server script) |
+| `virtual_agent_topic/*` | Scripts for the Virtual Agent topic nodes that put the chat into Otto |
+| `widget/*` | Optional standalone chat page: a Service Portal widget (HTML, CSS, client and server script) |
 | `tests/background_script_test.js` | Checks the setup and plays a full conversation from a background script |
 | `SETUP_GUIDE.md` | Step-by-step configuration in ServiceNow |
 
@@ -50,8 +51,9 @@ after the user confirms, so the LLM can never submit something on its own.
 
 - Now Assist installed with the **Now Assist Skill Kit** plugin
   (`sn_skill_builder`) and a working LLM provider (Now LLM Service or your own).
-- Roles: `sn_skill_builder.admin` to build the skill, `admin` for the script
-  includes, properties and widget.
+- Glide Virtual Agent with Now Assist in Virtual Agent, which Otto uses to run topics.
+- Roles: `sn_skill_builder.admin` to build the skill, `virtual_agent_admin` for
+  the topic, and `admin` for the script includes and properties.
 - Your catalog item's sys_id and the **internal names** of its three variables.
   Open the item, go to the *Variables* related list, and read the *Name* column.
   It is not the question label.
@@ -67,8 +69,9 @@ configuration. In short:
 4. Build, test and publish the Skill Kit skill.
 5. Activate the skill and copy its two IDs into the properties.
 6. Test from a background script.
-7. Create the chat widget and a portal page for it.
-8. Test end to end.
+7. Build the Virtual Agent topic that loops through the chat.
+8. Add the topic to the assistant Otto uses.
+9. Test in Otto chat.
 
 ## Example conversation
 
@@ -112,4 +115,4 @@ configuration. In short:
 | Variables are empty on the RITM | A variable name in the properties does not match the variable's *Name* field |
 | "Action ... is not a valid option" | The Action variable must be a Select Box or Multiple Choice variable with choices in `question_choice` |
 | Item has other mandatory variables | Add them to `submitRequest()`, the skill prompt, and `_isComplete()` |
-| Scoped app instead of global | Rename the `x_access_chat.` property prefix to your scope and replace `global.` in the widget server script |
+| Scoped app instead of global | Rename the `x_access_chat.` property prefix to your scope and replace `global.` in the topic and widget scripts |

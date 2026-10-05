@@ -143,7 +143,8 @@ Return ONLY one JSON object (no markdown, no code fences, no text before or afte
 
 - **Output:** leave the response as plain text. The script include strips any
   code fences and reads the JSON from the text.
-- **Deployment:** no UI deployment is needed. The chat widget calls the skill
+- **Deployment:** no UI deployment is needed. The chat engine (run by the Otto
+  Virtual Agent topic) calls the skill
   from a server script. If your release requires one deployment target before
   you can publish, pick **UI Action** and leave it inactive.
 - **Roles:** let the users who will chat run the skill (e.g. `snc_internal`).
