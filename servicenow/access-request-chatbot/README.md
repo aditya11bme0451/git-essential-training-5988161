@@ -44,6 +44,7 @@ after the user confirms, so the LLM can never submit something on its own.
 | `script_include/AccessRequestCatalogUtils.js` | User lookup, Action choices, and catalog submission via `CartJS` |
 | `widget/*` | The chat window: a Service Portal widget (HTML, CSS, client and server script) |
 | `tests/background_script_test.js` | Checks the setup and plays a full conversation from a background script |
+| `SETUP_GUIDE.md` | Step-by-step configuration in ServiceNow |
 
 ## Prerequisites
 
@@ -57,59 +58,17 @@ after the user confirms, so the LLM can never submit something on its own.
 
 ## Build steps
 
-### 1. System properties
+Follow **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for the full click-by-click
+configuration. In short:
 
-Create these in `sys_properties` (type `string`):
-
-| Name | Value |
-|---|---|
-| `x_access_chat.catalog_item_sys_id` | sys_id of your catalog item |
-| `x_access_chat.var.requested_for` | variable name, if not `requested_for` |
-| `x_access_chat.var.action` | variable name, if not `action` |
-| `x_access_chat.var.comments` | variable name, if not `comments` |
-| `x_access_chat.skill.capability_sys_id` | filled in after step 3 |
-| `x_access_chat.skill.config_sys_id` | filled in after step 3 |
-
-### 2. Script includes
-
-*System Definition → Script Includes → New*. Create both with **Accessible
-from: All application scopes** and **Client callable** unchecked:
-
-- `AccessRequestCatalogUtils` from `script_include/AccessRequestCatalogUtils.js`
-- `AccessRequestChatEngine` from `script_include/AccessRequestChatEngine.js`
-
-### 3. Build the Skill Kit skill
-
-Follow `nask_skill/access_request_chat_skill.md`: create the skill, add the five
-inputs, paste the prompt, test it, and publish it. Then copy its capability and
-skill config sys_ids into the two `x_access_chat.skill.*` properties.
-
-### 4. Check it from a background script
-
-Run `tests/background_script_test.js`. Part 1 should list your Add/Remove
-options and your own user. Part 2 should print a natural conversation that
-ends with the summary. Set `SUBMIT = true` once to confirm a REQ is created
-with all three variables filled in.
-
-### 5. Create the chat widget
-
-*Service Portal → Widgets → New*
-
-| Field | Value |
-|---|---|
-| Name | Access Request Chat |
-| ID | `access-request-chat` |
-| Body HTML template | `widget/template.html` |
-| CSS - SCSS | `widget/style.scss` |
-| Client controller | `widget/client_controller.js` |
-| Server script | `widget/server_script.js` |
-
-### 6. Put the chatbot on a page
-
-*Service Portal → Designer*: open your portal's page (or create a page called
-`access_request_chat`) and drag the **Access Request Chat** widget onto it.
-To make it easy to find, link to the page from your catalog item's
-description, or add it as a menu item or quick link.
+1. Check plugins and roles, and note the catalog item's sys_id and variable names.
+2. Create the `x_access_chat.*` system properties.
+3. Create the two script includes.
+4. Build, test and publish the Skill Kit skill.
+5. Activate the skill and copy its two IDs into the properties.
+6. Test from a background script.
+7. Create the chat widget and a portal page for it.
+8. Test end to end.
 
 ## Example conversation
 
