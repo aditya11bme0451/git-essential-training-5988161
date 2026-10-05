@@ -1,22 +1,24 @@
 /**
- * Script Include: AccessRequestAgentUtils
+ * Script Include: AccessRequestCatalogUtils
  * Application:    Global (or your scoped app)
  * Accessible from: All application scopes
  * Client callable: false
  *
- * Server-side helpers used by the "Access Request Assistant" AI agent tools
- * (AI Agent Studio) and by the optional Now Assist Skill Kit skill.
+ * Deterministic catalog helpers for the Access Request chatbot. The Now Assist
+ * Skill Kit skill handles the conversation; everything that touches data
+ * (user lookup, valid Action choices, submitting the request) happens here so
+ * the LLM never creates records on its own.
  *
  * Configuration lives in system properties so nothing is hard-coded:
- *   x_access_agent.catalog_item_sys_id   sys_id of your existing catalog item (required)
- *   x_access_agent.var.requested_for     variable name for "Requested for"   (default: requested_for)
- *   x_access_agent.var.action            variable name for "Action"          (default: action)
- *   x_access_agent.var.comments          variable name for "Comments"        (default: comments)
+ *   x_access_chat.catalog_item_sys_id   sys_id of your existing catalog item (required)
+ *   x_access_chat.var.requested_for     variable name for "Requested for"   (default: requested_for)
+ *   x_access_chat.var.action            variable name for "Action"          (default: action)
+ *   x_access_chat.var.comments          variable name for "Comments"        (default: comments)
  */
-var AccessRequestAgentUtils = Class.create();
-AccessRequestAgentUtils.prototype = {
+var AccessRequestCatalogUtils = Class.create();
+AccessRequestCatalogUtils.prototype = {
 
-    PROP_PREFIX: 'x_access_agent.',
+    PROP_PREFIX: 'x_access_chat.',
     MAX_USER_MATCHES: 5,
 
     initialize: function() {
@@ -29,7 +31,7 @@ AccessRequestAgentUtils.prototype = {
     /**
      * Find active users matching a name, user ID or email.
      * Returns { status, matches: [{sys_id, name, user_name, email, department}] }
-     * The agent uses this to turn "John Smith" into a sys_user sys_id and to
+     * The chat engine uses this to turn "John Smith" into a sys_user sys_id and to
      * ask the user to disambiguate when there is more than one match.
      */
     findUsers: function(searchTerm) {
@@ -37,7 +39,7 @@ AccessRequestAgentUtils.prototype = {
         if (!term)
             return { status: 'error', message: 'Please provide a name, user ID or email to search for.', matches: [] };
 
-        // "me" / "myself" resolves to the person chatting with the agent.
+        // "me" / "myself" resolves to the person chatting with the bot.
         if (/^(me|myself|self)$/i.test(term))
             term = gs.getUserID();
 
@@ -81,7 +83,7 @@ AccessRequestAgentUtils.prototype = {
 
     /**
      * Read the choices of the "Action" variable straight from the catalog item,
-     * so the agent always offers exactly what the form offers (e.g. Add / Remove).
+     * so the chatbot always offers exactly what the form offers (e.g. Add / Remove).
      * Returns { status, options: [{value, label}] }
      */
     getActionOptions: function() {
@@ -120,12 +122,12 @@ AccessRequestAgentUtils.prototype = {
         // --- validate Requested for ---------------------------------------
         var user = new GlideRecord('sys_user');
         if (!requestedForSysId || !user.get(requestedForSysId) || user.getValue('active') != '1')
-            return { status: 'error', message: 'Requested for must be the sys_id of an active user. Use the user lookup tool first.' };
+            return { status: 'error', message: 'Requested for must be the sys_id of an active user. Look the user up first.' };
 
         // --- validate Action against the real choice list -----------------
-        var actionValue = this._resolveActionValue(action);
+        var actionValue = this.resolveActionValue(action);
         if (!actionValue)
-            return { status: 'error', message: 'Action "' + action + '" is not a valid option. Use the action options tool and ask the user to choose.' };
+            return { status: 'error', message: 'Action "' + action + '" is not a valid option. Ask the user to choose one of the listed options.' };
 
         // --- validate Comments --------------------------------------------
         var commentText = (comments || '').toString().trim();
@@ -166,9 +168,23 @@ AccessRequestAgentUtils.prototype = {
                 message: 'Request ' + result.request_number + ' submitted for ' + user.getValue('name') + '.'
             };
         } catch (e) {
-            gs.error('AccessRequestAgentUtils.submitRequest failed: ' + e);
+            gs.error('AccessRequestCatalogUtils.submitRequest failed: ' + e);
             return { status: 'error', message: 'The request could not be submitted: ' + e };
         }
+    },
+
+    // Accepts the choice value ("add") or its label ("Add"), case-insensitive.
+    // Returns the choice value, or '' when it is not a valid option.
+    resolveActionValue: function(action) {
+        var wanted = (action || '').toString().trim().toLowerCase();
+        if (!wanted)
+            return '';
+        var options = this.getActionOptions().options || [];
+        for (var i = 0; i < options.length; i++) {
+            if (options[i].value.toLowerCase() == wanted || options[i].label.toLowerCase() == wanted)
+                return options[i].value;
+        }
+        return '';
     },
 
     // ----------------------------------------------------------------------
@@ -193,18 +209,5 @@ AccessRequestAgentUtils.prototype = {
         return v.next() ? v.getUniqueValue() : '';
     },
 
-    // Accepts the choice value ("add") or its label ("Add"), case-insensitive.
-    _resolveActionValue: function(action) {
-        var wanted = (action || '').toString().trim().toLowerCase();
-        if (!wanted)
-            return '';
-        var options = this.getActionOptions().options || [];
-        for (var i = 0; i < options.length; i++) {
-            if (options[i].value.toLowerCase() == wanted || options[i].label.toLowerCase() == wanted)
-                return options[i].value;
-        }
-        return '';
-    },
-
-    type: 'AccessRequestAgentUtils'
+    type: 'AccessRequestCatalogUtils'
 };

@@ -1,0 +1,30 @@
+<div class="arc-chat panel panel-default">
+  <div class="panel-heading arc-header">
+    <span><i class="fa fa-comments" aria-hidden="true"></i> Access Request Assistant</span>
+    <button type="button" class="btn btn-link btn-xs arc-restart" ng-click="c.restart()" ng-disabled="c.busy">
+      Start over
+    </button>
+  </div>
+
+  <div class="panel-body arc-messages" role="log" aria-live="polite">
+    <div ng-repeat="m in c.messages" class="arc-row" ng-class="'arc-' + m.from">
+      <div class="arc-bubble">
+        <div class="arc-text">{{m.text}}</div>
+        <a ng-if="m.link" class="btn btn-primary btn-sm arc-link" ng-href="{{m.link}}" target="_blank">
+          Open {{m.request_number}}
+        </a>
+      </div>
+    </div>
+    <div class="arc-row arc-bot" ng-if="c.busy">
+      <div class="arc-bubble arc-typing">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <form class="panel-footer arc-input" ng-submit="c.send()">
+    <input type="text" class="form-control" ng-model="c.draft" maxlength="1000"
+           placeholder="Type your answer..." aria-label="Message" ng-disabled="c.busy" autocomplete="off" />
+    <button type="submit" class="btn btn-primary" ng-disabled="c.busy || !c.draft.trim()">Send</button>
+  </form>
+</div>
