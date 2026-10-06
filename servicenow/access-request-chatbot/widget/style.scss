@@ -1,0 +1,60 @@
+.arc-chat {
+  display: flex;
+  flex-direction: column;
+  height: 560px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.arc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+}
+.arc-messages {
+  flex: 1;
+  overflow-y: auto;
+  background: #f7f8fa;
+}
+.arc-row {
+  display: flex;
+  margin-bottom: 10px;
+}
+.arc-user { justify-content: flex-end; }
+.arc-bot { justify-content: flex-start; }
+.arc-bubble {
+  max-width: 80%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+}
+.arc-user .arc-bubble {
+  background: $brand-primary;
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}
+.arc-bot .arc-bubble {
+  background: #fff;
+  border-bottom-left-radius: 2px;
+}
+.arc-text { white-space: pre-wrap; word-wrap: break-word; }
+.arc-link { margin-top: 8px; }
+.arc-input {
+  display: flex;
+  gap: 8px;
+}
+.arc-typing span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 2px;
+  border-radius: 50%;
+  background: #999;
+  animation: arc-blink 1.2s infinite ease-in-out;
+}
+.arc-typing span:nth-child(2) { animation-delay: .2s; }
+.arc-typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes arc-blink {
+  0%, 80%, 100% { opacity: .2; }
+  40% { opacity: 1; }
+}
